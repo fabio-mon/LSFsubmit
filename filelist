@@ -1,0 +1,23 @@
+#!/bin/bash
+dataset=$1
+site=T2_CH_CERN
+#filelist=flist$dataset/list.list
+
+usage(){
+	echo "basename $0 datasetpath"
+}
+
+if [ -z "$dataset" ]; then
+	echo "[ERROR `basename $0`] No datasetpath in input"
+	usage
+	exit 1
+fi
+
+das_client --query="site dataset=$dataset" | grep $site -q  || {
+	echo "[ERROR `basename $0`] dataset $dataset not at $site" >> /dev/stderr
+	exit 1
+}
+
+
+mkdir -p `dirname $filelist`
+das_client --query="file dataset=$dataset" --limit=0 # > $filelist
