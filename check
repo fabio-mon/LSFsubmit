@@ -1,0 +1,34 @@
+#!/bin/bash
+UI_WORKING_DIR=$1
+nJobs=`cat ${UI_WORKING_DIR}/share/filelist | tail -1 | cut -d ' ' -f 1`
+jobid=`tail -1 $UI_WORKING_DIR/JOBID` 
+
+echo "------------------------------JOB STATUS"
+if ls $UI_WORKING_DIR/res/*.status &> /dev/null ;then
+	cat $UI_WORKING_DIR/res/*.status | sort -n | awk '(NF==2){status=$2; joblist[status]=sprintf("%s %d", joblist[status], $1)}; END{for(status in joblist){print status, "\t", joblist[status]}}' | awk -f awk/compact.awk | sed 's|,$||' | sort -r | column -t
+	
+	DONE=`cat $UI_WORKING_DIR/res/*.status | sort -n | awk '(NF==2){status=$2; joblist[status]=sprintf("%s %d", joblist[status], $1)}; END{for(status in joblist){print status, "\t", joblist[status]}}' | awk -f awk/compact.awk | sed 's|,$||' | grep -c -F "[0] 1-${nJobs}"`
+	
+	if [ "$DONE" == "1" ];
+	then 
+		echo "JOBS FINISHED"
+	touch ${UI_WORKING_DIR}/res/finished
+#else
+#	bjobs -A $jobid
+	fi
+else
+	echo "Jobs not submitted"
+	echo "submit $UI_WORKING_DIR"
+fi
+
+exit 0
+for jobid in `seq 1 $nJobs`
+do	
+	file=$UI_WORKING_DIR/res/$jobid.status
+	if [ -e $file ];then
+		source $file
+		echo $jobid $EXITSTATUS
+	else
+		echo $jobid 55517
+	fi
+done

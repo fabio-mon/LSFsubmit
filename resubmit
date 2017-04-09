@@ -1,0 +1,36 @@
+#!/bin/bash
+UI_WORKING_DIR=$1
+jobName=${2:-test}
+
+joblist=`echo $3 | tr ',' ' ' `
+nJobs=`tail -1 $UI_WORKING_DIR/share/filelist | cut -d ' ' -f 1`
+if [ ! -e "${UI_WORKING_DIR}/res/submitted" ];
+then
+	echo "[ERROR `basename $0`] job never submitted"
+	exit 1
+fi
+for j in $joblist
+do
+	if [ -e "${UI_WORKING_DIR}/res/$j.done" ];then
+		echo "[WARNING `basename $0`] job done, if you want to force resubmitssion, please remove the .done file" >> /dev/stderr
+	else
+		rm ${UI_WORKING_DIR}/res/$j-std*
+		bsub -q cmscaf1nd \
+		-oo ${UI_WORKING_DIR}/res/%I-stdout.log \
+		-eo ${UI_WORKING_DIR}/res/%I-stderr.log \
+		-J "$jobName[$j-${j}]" -P $jobName \
+		"cp $PWD/$UI_WORKING_DIR/share/* .; CMSSW.sh \$LSB_JOBINDEX filelist $CMSSW_VERSION; EXITSTATUS=\$?; echo \"EXITSTATUS=\${EXITSTATUS}\" |tee ${PWD}/${UI_WORKING_DIR}/res/\${LSB_JOBINDEX}.status" | tee $UI_WORKING_DIR/bsub.log || exit 1
+	fi
+done
+
+exit 0
+for job in 
+
+JOBID=`grep "submitted to queue" $UI_WORKING_DIR/bsub.log | sed 's|Job <\([0-9]*\)> is submitted to queue <cmscaf1nd>.|\1|' | head -1`
+echo $JOBID > $UI_WORKING_DIR/JOBID
+	
+touch $UI_WORKING_DIR/res/submitted
+else
+	echo "[WARNING `basename $0`] Jobs for $UI_WORKING_DIR have been already submitted" >> /dev/stderr
+fi
+

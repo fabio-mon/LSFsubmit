@@ -1,0 +1,25 @@
+#!/bin/bash
+UI_WORKING_DIR=$1
+nJobs=`tail -1 $UI_WORKING_DIR/share/filelist | cut -d ' ' -f 1`
+jobName=${2:-test}
+
+statusFile=${PWD}/${UI_WORKING_DIR}/status
+for jobid in `seq 1 ${nJobs}`
+do
+	if [ -e "${UI_WORKING_DIR}/res/$jobid.status" ];then
+		echo "[WARNING `basename $0`] Jobs for $UI_WORKING_DIR have been already submitted" >> /dev/stderr
+		exit 1
+	fi
+	echo "$jobid SUBMITTED" > $UI_WORKING_DIR/res/$jobid.status
+done
+bsub -q cmscaf1nd \
+		-oo ${UI_WORKING_DIR}/res/%I-stdout.log \
+	-eo ${UI_WORKING_DIR}/res/%I-stderr.log \
+	-J "$jobName[1-${nJobs}]" -P $jobName \
+	"UI_WORKING_DIR=$PWD/$UI_WORKING_DIR; echo \"\${LSB_JOBINDEX} RUNNING\" > \$UI_WORKING_DIR/res/\${LSB_JOBINDEX}.status; cp \$UI_WORKING_DIR/share/* .; CMSSW.sh \$LSB_JOBINDEX filelist $CMSSW_VERSION; EXITSTATUS=\$?; echo \"\${LSB_JOBINDEX} \$EXITSTATUS\" >  \${UI_WORKING_DIR}/res/\${LSB_JOBINDEX}.status" | tee $UI_WORKING_DIR/bsub.log || exit 1
+
+JOBID=`grep "submitted to queue" $UI_WORKING_DIR/bsub.log | sed 's|Job <\([0-9]*\)> is submitted to queue <cmscaf1nd>.|\1|' | head -1`
+echo $JOBID >> $UI_WORKING_DIR/JOBID
+
+
+

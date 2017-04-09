@@ -1,0 +1,80 @@
+#!/bin/bash
+LSFSUBMIT_PATH=~shervin/scratch0/LSFsubmit/
+configFile=$1
+filelist=$2
+
+if [ ! -r "$configFile" ];then
+	echo "[ERROR `basename $0`] config file not provided or not readable" >> /dev/stderr
+	exit 1
+fi
+source $configFile
+
+
+# check inputs
+if [ -e "${UI_WORKING_DIR}" ];then
+   echo "[ERROR `basename $0`] UI_WORKING_DIR: $UI_WORKING_DIR already exists" >> /dev/stderr
+   exit 1
+fi
+if [ ! -e "$pset" ];then
+   echo "[ERROR `basename $0`] pset: $pset not found or not readable" >> /dev/stderr
+   exit 1
+fi
+if [ -z "${dataset}" ];then
+	echo "[ERROR `basename $0`] dataset not defined" >> /dev/stderr
+	exit 1
+fi
+
+# create the dir
+
+mkdir -p $UI_WORKING_DIR/{share,res} || {
+	echo "[ERROR `basename $0`] impossible to create $UI_WORKING_DIR/{share,res}" >> /dev/stderr
+	exit 1
+}
+cp $configFile $UI_WORKING_DIR/share/config
+
+# prepare the pset
+python $pset $psetparams || exit 1
+mv processDump.py $UI_WORKING_DIR/share/pset.py || exit 1
+
+#make the file list
+case $dataset in
+	None)
+		if [ ! -r "${filelist}" ];then
+			echo "[ERROR `basename $0`] filelist $filelist not found or not readable" >> /dev/stderr
+			exit 1
+		fi
+		awk -v nFileMax=10 'BEGIN{n=1};(NF!=0){i++; print n,"\""$1"\"",0,0,0,0; if(i>=nFileMax){n++; i=0}}' $filelist > $UI_WORKING_DIR/share/filelist
+		;;
+	*)
+		if [ -n "${runrange}" ]; then
+			filelist $dataset T2_CH_CERN $runrange > $UI_WORKING_DIR/share/filelist || exit 1
+		else
+			filelist $dataset T2_CH_CERN > $UI_WORKING_DIR/share/filelist || exit 1
+		fi
+		;;
+esac
+cp $LSFSUBMIT_PATH/CMSSW.sh $UI_WORKING_DIR/share/
+cp $LSFSUBMIT_PATH/copy     $UI_WORKING_DIR/share/
+
+# make the sandbox
+$LSFSUBMIT_PATH/sandbox $UI_WORKING_DIR || exit $?
+
+
+exit 0
+#!/bin/bash
+
+jobid=$1
+filelist=$2
+CMSSW_VERSION=$3
+
+tar -xzf sandbox.tgz 
+files=`grep "^$jobid " $filelist | cut -d ' ' -f 2 | tr '\n' ','`
+echo "process.source.fileNames = cms.untracked.vstring( [ $files ])" >> pset.py
+echo "========================================"
+
+cd $CMSSW_VERSION/
+scram build projectrename
+eval `scramv1 runtime -sh`
+echo $jobid $filelist pset.py $CMSSW_BASE
+echo "cmsRun pyset.py"
+#cmsRun pset.py 
