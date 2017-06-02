@@ -8,4 +8,5 @@ create configFile
 \endverbatim
    it will generate a working area as specified in the config file
  - submit workingArea: this will submit the jobs to LSF
+ - check  workingArea: this will check the jobs
 */
