@@ -1,5 +1,5 @@
 #!/bin/bash
-LSFSUBMIT_PATH=~shervin/scratch0/LSFsubmit/
+LSFSUBMIT_PATH=/afs/cern.ch/user/s/shervin/public/LSFsubmit/
 configFile=$1
 filelist=$2
 
