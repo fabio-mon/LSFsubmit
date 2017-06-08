@@ -46,7 +46,7 @@ case $dataset in
 		awk -v nFileMax=10 'BEGIN{n=1};(NF!=0){i++; print n,"\""$1"\"",0,0,0,0; if(i>=nFileMax){n++; i=0}}' $filelist > $UI_WORKING_DIR/share/filelist
 		;;
 	*)
-		if [ -n "${runrange}" ]; then
+		if [ -n "${runrange}" -a "${runrange}" != "allRange" ]; then
 			filelist $dataset T2_CH_CERN $runrange > $UI_WORKING_DIR/share/filelist || exit 1
 		else
 			filelist $dataset T2_CH_CERN > $UI_WORKING_DIR/share/filelist || exit 1
