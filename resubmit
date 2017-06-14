@@ -4,18 +4,18 @@ jobName=${2:-test}
 
 joblist=`echo $3 | tr ',' ' ' `
 nJobs=`tail -1 $UI_WORKING_DIR/share/filelist | cut -d ' ' -f 1`
-if [ ! -e "${UI_WORKING_DIR}/res/submitted" ];
-then
-	echo "[ERROR `basename $0`] job never submitted"
-	exit 1
-fi
+# if [ ! -e "${UI_WORKING_DIR}/res/submitted" ];
+# then
+# 	echo "[ERROR `basename $0`] job never submitted"
+# 	exit 1
+# fi
 for j in $joblist
 do
 	if [ -e "${UI_WORKING_DIR}/res/$j.done" ];then
 		echo "[WARNING `basename $0`] job done, if you want to force resubmitssion, please remove the .done file" >> /dev/stderr
 	else
 		rm ${UI_WORKING_DIR}/res/$j-std*
-		bsub -q cmscaf1nd \
+		bsub -q 1nd \
 		-oo ${UI_WORKING_DIR}/res/%I-stdout.log \
 		-eo ${UI_WORKING_DIR}/res/%I-stderr.log \
 		-J "$jobName[$j-${j}]" -P $jobName \

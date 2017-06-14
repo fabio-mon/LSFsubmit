@@ -28,8 +28,10 @@ else
 	runmin=0
 	runmax=999999
 fi
-query="file dataset=$dataset run between [$runmin,$runmax] |  grep file.name, file.size"
+query="file dataset=$dataset run between [$runmin,$runmax] status=valid | grep file.name, file.size"
 
-das_client --query="$query" --limit=0 | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' 
+das_client --query="$query" --limit=0  \
+ | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq \
+ | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' 
 #  tr -d '[' | tr -d "'" | tr ']' ',' | cut -d ',' -f 1,3 | 
 

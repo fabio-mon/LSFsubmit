@@ -2,7 +2,7 @@
 UI_WORKING_DIR=$1
 nJobs=`tail -1 $UI_WORKING_DIR/share/filelist | cut -d ' ' -f 1`
 jobName=${2:-test}
-queue=1nd
+queue=${3:-1nd}
 statusFile=${PWD}/${UI_WORKING_DIR}/status
 for jobid in `seq 1 ${nJobs}`
 do
