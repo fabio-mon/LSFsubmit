@@ -24,6 +24,10 @@ if [ -z "${dataset}" ];then
 	exit 1
 fi
 
+if voms-proxy-info | grep -q "timeleft  : 00:00:00" ; then
+	voms-proxy-list
+fi
+
 # create the dir
 
 mkdir -p $UI_WORKING_DIR/{share,res} || {
