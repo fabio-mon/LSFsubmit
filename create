@@ -3,6 +3,7 @@ LSFSUBMIT_PATH=/afs/cern.ch/user/s/shervin/public/LSFsubmit/
 configFile=$1
 filelist=$2
 
+
 if [ ! -r "$configFile" ];then
 	echo "[ERROR `basename $0`] config file not provided or not readable" >> /dev/stderr
 	exit 1
@@ -51,9 +52,10 @@ case $dataset in
 		;;
 	*)
 		if [ -n "${runrange}" -a "${runrange}" != "allRange" ]; then
-			filelist $dataset T2_CH_CERN $runrange > $UI_WORKING_DIR/share/filelist || exit 1
+			# if datasetsite is not assigned or null, it is replaced by T2_CH_CERN
+			filelist $dataset ${datasetsite:=T2_CH_CERN} $runrange > $UI_WORKING_DIR/share/filelist || exit 1
 		else
-			filelist $dataset T2_CH_CERN > $UI_WORKING_DIR/share/filelist || exit 1
+			filelist $dataset $datasetsite > $UI_WORKING_DIR/share/filelist || exit 1
 		fi
 		;;
 esac
