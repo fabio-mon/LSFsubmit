@@ -4,6 +4,7 @@ nJobs=`cat ${UI_WORKING_DIR}/share/filelist | tail -1 | cut -d ' ' -f 1`
 jobid=`tail -1 $UI_WORKING_DIR/JOBID` 
 
 echo "------------------------------JOB STATUS"
+echo $UI_WORKING_DIR
 if ls $UI_WORKING_DIR/res/*.status &> /dev/null ;then
 	cat $UI_WORKING_DIR/res/*.status | sort -n | awk '(NF==2){status=$2; joblist[status]=sprintf("%s %d", joblist[status], $1)}; END{for(status in joblist){print status, "\t", joblist[status]}}' | awk -f awk/compact.awk | sed 's|,$||' | sort -r | column -t
 	
