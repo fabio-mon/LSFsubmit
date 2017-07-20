@@ -2,8 +2,16 @@
 UI_WORKING_DIR=$1
 jobName=${2:-test}
 
-joblist=`echo $3 | tr ',' ' ' `
 queue=${4:-cmscaf1nd}
+
+IFS=','
+for job in $3
+do
+	jmin=`echo $job | cut -d '-' -f 1`
+	jmax=`echo $job | cut -d '-' -f 2`
+	job=`seq -s ',' $jmin $jmax`
+	joblist=`echo $joblist,$job | tr ' ' ',' | sed 's|^,||'`
+done
 
 nJobs=`tail -1 $UI_WORKING_DIR/share/filelist | cut -d ' ' -f 1`
 # if [ ! -e "${UI_WORKING_DIR}/res/submitted" ];
@@ -11,13 +19,19 @@ nJobs=`tail -1 $UI_WORKING_DIR/share/filelist | cut -d ' ' -f 1`
 # 	echo "[ERROR `basename $0`] job never submitted"
 # 	exit 1
 # fi
+
 for j in $joblist
 do
-	if [ -e "${UI_WORKING_DIR}/res/$j.done" ];then
-		echo "[WARNING `basename $0`] job done, if you want to force resubmitssion, please remove the .done file" >> /dev/stderr
+	
+	if grep -s "$j 0" ${UI_WORKING_DIR}/res/$j.status ; then
+		echo "[WARNING `basename $0`] job done, if you want to force resubmitssion, please remove the .status file" >> /dev/stderr
 	else
-		rm ${UI_WORKING_DIR}/res/$j-std*
-		submit $UI_WORKING_DIR $jobName $queue  $j
+		if grep -s "SUBMITTED" ${UI_WORKING_DIR}/res/$j.status ; then
+			echo "[WARNING `basename $0`] job done, if you want to force resubmitssion, please remove the .status file" >> /dev/stderr
+		else
+			rm ${UI_WORKING_DIR}/res/$j-std*
+			submit $UI_WORKING_DIR $jobName $queue  $j
+		fi
 	fi
 done
 

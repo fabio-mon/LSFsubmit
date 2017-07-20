@@ -52,11 +52,16 @@ fi
 
 
 # exit status 92 is a job with xrootd failing, try the automatic requeue of the job
+if voms-proxy-info | grep -q "timeleft  : 00:00:00" ; then
+	voms-proxy-list
+fi
+
+cp /tmp/x509up_u${UID} $UI_WORKING_DIR/share/ || exit 1
 bsub -q $queue -Q 92 \
 		-oo ${UI_WORKING_DIR}/res/%I-stdout.log \
 	-eo ${UI_WORKING_DIR}/res/%I-stderr.log \
 	-J "${jName}" -P $jobName \
-	"UI_WORKING_DIR=$PWD/$UI_WORKING_DIR; echo \"\${LSB_JOBINDEX} RUNNING\" > \$UI_WORKING_DIR/res/\${LSB_JOBINDEX}.status; cp \$UI_WORKING_DIR/share/* .; CMSSW.sh \$LSB_JOBINDEX filelist $CMSSW_VERSION; EXITSTATUS=\$?; echo \"\${LSB_JOBINDEX} \$EXITSTATUS\" >  \${UI_WORKING_DIR}/res/\${LSB_JOBINDEX}.status" | tee $UI_WORKING_DIR/bsub.log || exit 1
+	"UI_WORKING_DIR=$PWD/$UI_WORKING_DIR; echo \"\${LSB_JOBINDEX} RUNNING\" > \$UI_WORKING_DIR/res/\${LSB_JOBINDEX}.status; cp \$UI_WORKING_DIR/share/* .; cp x509* /tmp/; voms-proxy-info; CMSSW.sh \$LSB_JOBINDEX filelist $CMSSW_VERSION; EXITSTATUS=\$?; echo \"\${LSB_JOBINDEX} \$EXITSTATUS\" >  \${UI_WORKING_DIR}/res/\${LSB_JOBINDEX}.status" | tee $UI_WORKING_DIR/bsub.log || exit 1
 
 JOBID=`grep "submitted to queue" $UI_WORKING_DIR/bsub.log | sed 's|Job <\([0-9]*\)> is submitted to queue <cmscaf1nd>.|\1|' | head -1`
 echo $JOBID >> $UI_WORKING_DIR/JOBID
