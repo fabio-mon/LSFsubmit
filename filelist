@@ -3,7 +3,7 @@ dataset=$1
 site=${2:-T2_CH_CERN}
 runrange=$3
 nEventsMax=${5:-1500000000}
-
+ISLOCAL=y
 usage(){
 	echo "basename $0 datasetpath site nEventsMax"
 }
@@ -14,8 +14,12 @@ if [ -z "$dataset" ]; then
 	exit 1
 fi
 
+
+
 case $site in 
 	any)
+		localsite=`grep "site name" /cvmfs/cms.cern.ch/SITECONF/local/JobConfig/site-local-config.xml | cut -d '=' -f 2 | tr '>' ' ' | sed 's|"||g'`
+		das_client --query="site dataset=$dataset" | grep $localsite -q || unset ISLOCAL
 		;;
 	*)
 		das_client --query="site dataset=$dataset" | grep $site -q  || {
@@ -36,7 +40,11 @@ fi
 query="file dataset=$dataset status=valid | grep file.name, file.size"
 #echo $query
 
-das_client --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}'
+if [ -n "${ISLOCAL}" ];then
+	das_client --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|/store/|root://cms-xrd-global.cern.ch//store/|'
+else
+	das_client --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|/store/|root://cms-xrd-global.cern.ch//store/|'
+fi
 
 #das_client --query="$query" --limit=0  | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' 
 #  tr -d '[' | tr -d "'" | tr ']' ',' | cut -d ',' -f 1,3 | 
