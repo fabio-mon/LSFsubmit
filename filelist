@@ -41,7 +41,7 @@ query="file dataset=$dataset status=valid | grep file.name, file.size"
 #echo $query
 
 if [ -n "${ISLOCAL}" ];then
-	das_client --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|/store/|root://cms-xrd-global.cern.ch//store/|'
+	das_client --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' 
 else
 	das_client --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|/store/|root://cms-xrd-global.cern.ch//store/|'
 fi
