@@ -13,13 +13,15 @@ cd -
 
 files=`grep "^$jobid " $filelist | cut -d ' ' -f 2 | tr '\n' ','`
 echo $files
-root -l -b -q `echo $files |tr ',' ' ' | tr '"' ' ' ` 2>&1 | tee xrootd_test.log
-grep -q Warning xrootd_test.log && {
-	for file in `echo $files | tr ',' ' ' | tr '"' ' '`
-	do
-		xrdcp -vsN $file . || exit 10
-	done
-	files=`echo $files | sed 's|".*/|"file:|'`
+echo $files | grep -q "root://" && {
+	root -l -b -q `echo $files |tr ',' ' ' | tr '"' ' ' ` 2>&1 | tee xrootd_test.log
+	grep -q Warning xrootd_test.log && {
+		for file in `echo $files | tr ',' ' ' | tr '"' ' '`
+		do
+			xrdcp -vsN $file . || exit 10
+		done
+		files=`echo $files | sed 's|".*/|"file:|'`
+	}
 }
 echo $files
 echo "process.source.fileNames = cms.untracked.vstring( [ $files ])" >> pset.py
