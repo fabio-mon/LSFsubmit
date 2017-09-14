@@ -2,7 +2,7 @@
 dataset=$1
 site=${2:-T2_CH_CERN}
 runrange=$3
-nEventsMax=${5:-1500000000}
+nEventsMax=${5:-3000000000}
 ISLOCAL=y
 usage(){
 	echo "basename $0 datasetpath site nEventsMax"
