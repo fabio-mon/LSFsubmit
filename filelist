@@ -19,13 +19,13 @@ fi
 case $site in 
 	any)
 		localsite=`grep "site name" /cvmfs/cms.cern.ch/SITECONF/local/JobConfig/site-local-config.xml | cut -d '=' -f 2 | tr '>' ' ' | sed 's|"||g'`
-		das_client --query="site dataset=$dataset" | grep $localsite -q || unset ISLOCAL
+		dasgoclient --query="site dataset=$dataset" | grep $localsite -q || unset ISLOCAL
 		;;
 	*)
-		das_client --query="site dataset=$dataset" | grep $site -q  || {
+		dasgoclient --query="site dataset=$dataset" | grep $site -q  || {
 			echo "[ERROR `basename $0`] dataset $dataset not at $site" >> /dev/stderr
-			das_client --query="site dataset=$dataset" >> /dev/stderr
-			exit 1
+			dasgoclient --query="site dataset=$dataset" >> /dev/stderr
+#			exit 1
 		}
 		;;
 esac
@@ -41,11 +41,11 @@ query="file dataset=$dataset status=valid | grep file.name, file.size"
 #echo $query
 
 if [ -n "${ISLOCAL}" ];then
-	das_client --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' 
+	dasgoclient --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|/store/|"/store/|' | sed  's|.root|.root"|'
 else
-	das_client --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|/store/|root://cms-xrd-global.cern.ch//store/|'
+	dasgoclient --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|.root|.root"|' | sed  's|/store/|"root://cms-xrd-global.cern.ch//store/|'
 fi
 
-#das_client --query="$query" --limit=0  | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' 
+#dasgoclient --query="$query" --limit=0  | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' 
 #  tr -d '[' | tr -d "'" | tr ']' ',' | cut -d ',' -f 1,3 | 
 
