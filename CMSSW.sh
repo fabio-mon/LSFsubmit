@@ -13,17 +13,28 @@ cd -
 
 files=`grep "^$jobid " $filelist | cut -d ' ' -f 2 | tr '\n' ','`
 echo $files
-echo $files | grep -q "root://" && {
-	root -l -b -q `echo $files |tr ',' ' ' | tr '"' ' ' ` 2>&1 | tee xrootd_test.log
-	grep -q Warning xrootd_test.log && {
-		for file in `echo $files | tr ',' ' ' | tr '"' ' '`
-		do
-			xrdcp -vsN $file . || exit 10
-		done
-		files=`echo $files | sed 's|".*/|"file:|'`
-	}
-}
-echo $files
+fs=""
+echo "------------------------------"
+#echo $files | grep -q "root://" && {
+	#root -l -b -q `echo $files |tr ',' ' ' | tr '"' ' ' ` 2>&1 | tee xrootd_test.log
+	#grep -q Warning xrootd_test.log && 
+	#{
+# copy all the files in local
+for file in `echo $files | tr ',' ' ' | tr '"' ' '`
+do
+	#xrdcp -vsN $file . || exit 10
+	echo $file >> /dev/stderr
+	time  xrdcp -vN $file . || exit 10
+	f=`echo $file\" | sed 's|.*/|"file:|'`
+	fs="$fs,$f"
+done
+
+files=`echo $fs | sed 's|,||'`
+	#}
+#}
+#echo -n "files="
+#echo $files
+
 echo "process.source.fileNames = cms.untracked.vstring( [ $files ])" >> pset.py
 echo "------------------------------"
 tail pset.py
@@ -32,6 +43,7 @@ echo "========================================"
 echo $jobid $filelist pset.py $CMSSW_BASE
 echo "======================================== ls"
 ls
+
 echo "======================================== cmsRun"
 cmsRun pset.py ||  {
 	exitstatus=$?
