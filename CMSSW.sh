@@ -40,7 +40,7 @@ cmsRun pset.py ||  {
 }
 echo "======================================== ls"
 ls
-for file in `echo $files | tr '"' ' ' | tr ',' ' ' | sed 's|file:||g`
+for file in `echo $files | tr '"' ' ' | tr ',' ' ' | sed 's|file:||g'`
 do
 	rm $file
 done

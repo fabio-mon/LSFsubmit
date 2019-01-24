@@ -1,5 +1,4 @@
 #!/bin/bash
-LSFSUBMIT_PATH=/afs/cern.ch/user/s/shervin/public/LSFsubmit/
 configFile=$1
 filelist=$2
 
@@ -65,6 +64,24 @@ cp $LSFSUBMIT_PATH/copy     $UI_WORKING_DIR/share/
 # make the sandbox
 $LSFSUBMIT_PATH/sandbox $UI_WORKING_DIR || exit $?
 
+# make the executable script (needed by HTCondor
+cat > $UI_WORKING_DIR/share/run.sh <<EOF
+#!/bin/bash
+PROCESS_ID=\$1
+
+export X509_USER_PROXY=\$2
+voms-proxy-info -all
+
+UI_WORKING_DIR=$PWD/$UI_WORKING_DIR; 
+echo "\${PROCESS_ID} RUNNING" > \$UI_WORKING_DIR/res/\${PROCESS_ID}.status; 
+cp \$UI_WORKING_DIR/share/* .; 
+
+./CMSSW.sh \${PROCESS_ID} filelist $CMSSW_VERSION; 
+EXITSTATUS=\$?; 
+echo "\${PROCESS_ID} \$EXITSTATUS" >  \${UI_WORKING_DIR}/res/\${PROCESS_ID}.status
+EOF
+
+chmod +x ${UI_WORKING_DIR}/share/run.sh
 
 exit 0
 #!/bin/bash

@@ -1,7 +1,8 @@
 #!/bin/bash
 UI_WORKING_DIR=$1
 nJobs=`cat ${UI_WORKING_DIR}/share/filelist | tail -1 | cut -d ' ' -f 1`
-jobid=`tail -1 $UI_WORKING_DIR/JOBID` 
+jobid=`ls ${UI_WORKING_DIR}/res/[0-9]*.[0-9]*-job.log | head -1 | sed 's|.*/||;s|\..*||'` 
+
 
 echo "------------------------------JOB STATUS"
 echo $UI_WORKING_DIR
