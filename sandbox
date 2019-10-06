@@ -1,0 +1,10 @@
+#!/bin/bash
+# this script prepares the sandbox to be send to the cluster
+UI_WORKING_DIR=$1
+if [ -z "$CMSSW_VERSION" ];then
+	echo "[ERROR `basename $0`] CMSSW_VERSION not defined, please make sure you have set up the CMSSW environment by making cmsenv" >> /dev/stderr
+	exit 1
+fi
+
+#tar  --exclude-vcs --exclude="*.root" --exclude="*/doxygen/*" --exclude="*/interface/*" --exclude="*/src/*/*/src/*" --exclude="*/tmp/*" --exclude="*src/*/*/lib/*" --exclude="*/macros/*"  --xform="s|${CMSSW_BASE}|${CMSSW_VERSION}|" -P --add-file $UI_WORKING_DIR/share/pset.py --add-file $UI_WORKING_DIR/share/filelist -czf $UI_WORKING_DIR/share/sandbox.tgz $CMSSW_BASE/.SCRAM/ CMSSW_BASE/python
+tar  --exclude="*.tgz" --xform="s|${CMSSW_BASE}|${CMSSW_VERSION}|" -P -hczf $UI_WORKING_DIR/share/sandbox.tgz $CMSSW_BASE/.SCRAM/ $CMSSW_BASE/config $CMSSW_BASE/python $CMSSW_BASE/lib $CMSSW_BASE/bin $CMSSW_BASE/src/*/*/data/ || exit $?

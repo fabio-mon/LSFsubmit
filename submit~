@@ -1,0 +1,110 @@
+#!/bin/bash
+UI_WORKING_DIR=$1
+nJobs=`tail -1 $UI_WORKING_DIR/share/filelist | cut -d ' ' -f 1`
+jobName=${2:-test}
+queue=${3:-cmscaf1nd}
+jobID=$4
+
+usage(){
+	echo "`basename $0` UI_WORKING_DIR jobName queue"
+    echo "       - this version submits all the jobs"
+    echo "`basename $0` UI_WORKING_DIR jobName queue jobID"
+	echo "       - this version resumits a single job"
+}
+
+# options may be followed by one colon to indicate they have a required argument
+if ! options=$(getopt -u -o h -l help -- "$@")
+then
+    # something went wrong, getopt will put out an error message for us
+    exit 1
+fi
+
+set -- $options
+
+while [ $# -gt 0 ]
+do
+    case $1 in
+		-h|--help) usage; exit 0;;
+		
+		(--) shift; break;;
+		(-*) usage; echo "$0: error - unrecognized option $1" 1>&2; usage >> /dev/stderr; exit 1;;
+		(*) break;;
+    esac
+    shift
+done
+
+
+
+if [ -n "${jobID}" ]; then
+
+    #jName="${jobName}[${jobID}-${jobID}]"
+    #jName="("
+    jName=$jName$jobID
+    #jName=$jName")"
+    echo "SJ!!!job ID is "${jobID}
+    echo "$jobID SUBMITTED" > $UI_WORKING_DIR/res/$jobID.status
+else
+    #jName="${jobName}[0-${nJobs}]"
+    #jName="("
+    for jobid in `seq 0 ${nJobs}`    
+    do
+	if [ $jobid -eq 0 ]; then
+	    jName=$jName${jobid}
+	else 
+	    jName=$jName","${jobid}
+	fi
+    done
+    #jName=$jName")"
+    #for jobid in `seq 1 ${nJobs}`
+    for jobid in `seq 0 ${nJobs}`
+    do
+	if [ -e "${UI_WORKING_DIR}/res/$jobid.status" ];then
+	    echo "[WARNING `basename $0`] Jobs for $UI_WORKING_DIR have been already submitted" >> /dev/stderr
+	    exit 1
+	fi
+	echo "$jobid SUBMITTED" > $UI_WORKING_DIR/res/$jobid.status
+    done
+fi
+
+
+# exit status 92 is a job with xrootd failing, try the automatic requeue of the job
+if voms-proxy-info | grep -q "timeleft  : 00:00:00" ; then
+	voms-proxy-list
+fi
+
+cp /tmp/x509up_u${UID} $UI_WORKING_DIR/share/ || exit 1
+cp /tmp/x509up_u${UID} $HOME/private/x509up || exit 1
+
+echo "Submitted now!!!!"
+
+totJobs=$(($nJobs+1))
+cat > $UI_WORKING_DIR/share/job.sub <<EOF
+executable            = ${UI_WORKING_DIR}/share/run.sh
+#executable            = ${UI_WORKING_DIR}/share/startup.sh
+#transfer_input_files    = ${UI_WORKING_DIR}/share/run.sh
+Proxy_path = $HOME/private/x509up
+arguments = \$(ProcId) \$(Proxy_path)
+output                = ${UI_WORKING_DIR}/res/\$(ProcId)-stdout.log
+error                 = ${UI_WORKING_DIR}/res/\$(ProcId)-stderr.log
+log                   = ${UI_WORKING_DIR}/res/\$(ClusterID).\$(ProcId)-job.log
+should_transfer_files   = Yes
+when_to_transfer_output = ON_EXIT_OR_EVICT
+transfer_output_files   = ""
+#requirements = (OpSysAndVer =?= "SLCern6")
++AccountingGroup = "group_u_CMS.CAF.ALCA"
++JobFlavour = "tomorrow"
+##+REQUIRED_OS = "SLC6"
+#+DesiredOS = REQUIRED_OS
+# queue $totJobs
+# queue in ProcId from ${jName}
+ queue in ProcId in ${jName}
+#max_retries = 10
+EOF
+
+condor_submit $UI_WORKING_DIR/share/job.sub
+echo $JOBID >> $UI_WORKING_DIR/JOBID
+exit 0
+
+
+
+

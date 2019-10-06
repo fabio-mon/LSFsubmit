@@ -1,0 +1,62 @@
+#!/bin/bash
+UI_WORKING_DIR=$1
+jobName=${2:-test}
+
+queue=${4:-cmscaf1nd}
+
+IFS=','
+for job in $3
+do
+	jmin=`echo $job | cut -d '-' -f 1`
+	jmax=`echo $job | cut -d '-' -f 2`
+	job=`seq -s ',' $jmin $jmax`
+	joblist=`echo $joblist,$job | tr ' ' ',' | sed 's|^,||'`
+done
+
+nJobs=`tail -1 $UI_WORKING_DIR/share/filelist | cut -d ' ' -f 1`
+# if [ ! -e "${UI_WORKING_DIR}/res/submitted" ];
+# then
+# 	echo "[ERROR `basename $0`] job never submitted"
+# 	exit 1
+# fi
+
+for j in $joblist
+do
+	
+	if grep -s "$j 0" ${UI_WORKING_DIR}/res/$j.status ; then
+		echo "[WARNING `basename $0`] job done, if you want to force resubmitssion, please remove the .status file" >> /dev/stderr
+	else
+		if grep -s "SUBMITTED" ${UI_WORKING_DIR}/res/$j.status ; then
+			echo "[WARNING `basename $0`] job done, if you want to force resubmitssion, please remove the .status file" >> /dev/stderr
+		else
+		####first remove the files related to this job if going to be resubmitted
+		IFS=$'\n' #### SJ!!! stupid thing needed to make the line below work
+		RootFiles=($(grep "xrdcp" ${UI_WORKING_DIR}/res/$j-stdout.log | cut -d " " -f3))
+		pathToRootFiles=($(grep "xrdcp" ${UI_WORKING_DIR}/res/$j-stdout.log | cut -d " " -f4 | awk -F "eoscms/" '{print $2}'))
+		nFiles=${#RootFiles[@]}
+		nPathToRootFiles=${#pathToRootFiles[@]}
+		if [ $nFiles -gt 0 ]; then
+		    echo "Removing the half copied files first !!! "
+		fi
+		for (( ifile=0; ifile<${nFiles}; ifile++ ))
+		do
+		    echo "Removing ${pathToRootFiles[${ifile}]}/${RootFiles[${ifile}]}"
+		    rm ${pathToRootFiles[${ifile}]}/${RootFiles[${ifile}]}
+		done
+		rm ${UI_WORKING_DIR}/res/$j-std*
+		submit $UI_WORKING_DIR $jobName $queue  $j
+		fi
+	fi
+done
+
+exit 0
+for job in 
+
+JOBID=`grep "submitted to queue" $UI_WORKING_DIR/bsub.log | sed 's|Job <\([0-9]*\)> is submitted to queue <cmscaf1nd>.|\1|' | head -1`
+echo $JOBID > $UI_WORKING_DIR/JOBID
+	
+touch $UI_WORKING_DIR/res/submitted
+else
+	echo "[WARNING `basename $0`] Jobs for $UI_WORKING_DIR have been already submitted" >> /dev/stderr
+fi
+

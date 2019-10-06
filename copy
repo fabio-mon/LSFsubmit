@@ -1,0 +1,23 @@
+#!/bin/bash
+configFile=$1
+jobID=$2
+subIndex=${3:-1}
+ls $configFile
+source ./$configFile
+#source config
+echo "------------------------------ configfile"
+cat $configFile
+
+echo "------------------------------"
+
+ID=`uuidgen -r | cut -d '-' -f 2`
+
+for file in $outFiles *.root
+do
+	if [ ! -e "${file}" ]; then continue; fi
+	newFileName=`basename $file .root`-$jobID-$subIndex-$ID.root
+	mv $file $newFileName
+	ls
+	echo "xrdcp -vsN $newFileName $storage_path/${user_remote_dir} "
+	xrdcp -vsN $newFileName $storage_path/${user_remote_dir}/$newFileName || exit 1
+done

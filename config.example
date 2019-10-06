@@ -1,0 +1,38 @@
+# this is the working director where temporary files and reports are put
+UI_WORKING_DIR=test
+#
+# this is the CMSSW cfg file to be run
+pset=processDump.py
+#
+# cmsRun cfg positional arguments
+psetparams=
+#
+# name of the published dataset 
+dataset=/DoubleEG/Run2016B-EcalUncalZElectron-PromptReco-v2/ALCARECO
+#
+# site where thigs will be stored: *CAVEAT* only T2_CH_CERN is supported now
+site=T2_CH_CERN
+#
+nEventsMax=1500000000
+#
+# only runs in the XXX-YYY run range (both XXX and YYY included) are considered
+runrange=
+#
+# not supported
+use_parent=
+#
+# name of the file that will store the list of file to run on
+# the list of files is get from DAS 
+filelist=flist$dataset/list.list
+#
+# list of root files to be copied to the storage element
+outFiles=ntuple.root,eleIDTree.root
+
+# not needed 
+storage_element=
+# remote output directory
+remoteDir=root://eoscms//eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/test/
+# LSF queue to be used
+queue=cmscaf1nd
+
+

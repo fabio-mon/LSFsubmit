@@ -1,0 +1,125 @@
+#!/bin/bash
+#LSFSUBMIT_PATH=/afs/cern.ch/user/s/shervin/public/LSFsubmit/
+LSFSUBMIT_PATH=/afs/cern.ch/work/e/ecalmon/cmssw/htCondor/CMSSW_10_3_2/src/Tools/LSFsubmit/scripts/
+configFile=$1
+filelist=$2
+
+
+if [ ! -r "$configFile" ];then
+	echo "[ERROR `basename $0`] config file not provided or not readable" >> /dev/stderr
+	exit 1
+fi
+source $configFile
+
+
+# check inputs
+if [ -e "${UI_WORKING_DIR}" ];then
+   echo "[ERROR `basename $0`] UI_WORKING_DIR: $UI_WORKING_DIR already exists" >> /dev/stderr
+   exit 1
+fi
+if [ ! -e "$pset" ];then
+   echo "[ERROR `basename $0`] pset: $pset not found or not readable" >> /dev/stderr
+   exit 1
+fi
+if [ -z "${dataset}" ];then
+	echo "[ERROR `basename $0`] dataset not defined" >> /dev/stderr
+	exit 1
+fi
+
+if voms-proxy-info | grep -q "timeleft  : 00:00:00" ; then
+	voms-proxy-list
+fi
+
+# create the dir
+
+mkdir -p $UI_WORKING_DIR/{share,res} || {
+	echo "[ERROR `basename $0`] impossible to create $UI_WORKING_DIR/{share,res}" >> /dev/stderr
+	exit 1
+}
+cp $configFile $UI_WORKING_DIR/share/config
+
+# prepare the pset
+python $pset $psetparams || exit 1
+mv processDump.py $UI_WORKING_DIR/share/pset.py || exit 1
+
+#make the file list
+case $dataset in
+	None)
+		if [ ! -r "${filelist}" ];then
+			echo "[ERROR `basename $0`] filelist $filelist not found or not readable" >> /dev/stderr
+			exit 1
+		fi
+		awk -v nFileMax=10 'BEGIN{n=1};(NF!=0){i++; print n,"\""$1"\"",0,0,0,0; if(i>=nFileMax){n++; i=0}}' $filelist > $UI_WORKING_DIR/share/filelist
+		;;
+	*)
+		if [ -n "${runrange}" -a "${runrange}" != "allRange" ]; then
+			# if datasetsite is not assigned or null, it is replaced by T2_CH_CERN
+			filelist $dataset ${datasetsite:=T2_CH_CERN} $runrange > $UI_WORKING_DIR/share/filelist || exit 1
+		else
+			filelist $dataset $datasetsite > $UI_WORKING_DIR/share/filelist || exit 1
+		fi
+		;;
+esac
+cp $LSFSUBMIT_PATH/CMSSW.sh $UI_WORKING_DIR/share/
+cp $LSFSUBMIT_PATH/copy     $UI_WORKING_DIR/share/
+
+# make the sandbox
+$LSFSUBMIT_PATH/sandbox $UI_WORKING_DIR || exit $?
+
+# make the executable script (needed by HTCondor
+cat > $UI_WORKING_DIR/share/run.sh <<EOF
+#!/bin/bash
+PROCESS_ID=\$1
+
+echo "Process ID "\$PROCESS_ID
+
+export X509_USER_PROXY=\$2
+voms-proxy-info -all
+
+echo "proxy info "\$X509_USER_PROXY
+
+UI_WORKING_DIR=$PWD/$UI_WORKING_DIR; 
+echo "\${PROCESS_ID} RUNNING" > \$UI_WORKING_DIR/res/\${PROCESS_ID}.status; 
+cp \$UI_WORKING_DIR/share/* .; 
+
+./CMSSW.sh \${PROCESS_ID} filelist $CMSSW_VERSION; 
+EXITSTATUS=\$?; 
+echo "\${PROCESS_ID} \$EXITSTATUS" >  \${UI_WORKING_DIR}/res/\${PROCESS_ID}.status
+EOF
+
+chmod +x ${UI_WORKING_DIR}/share/run.sh
+
+
+####startup script for SLC6
+#cat > $UI_WORKING_DIR/share/startup.sh <<EOF
+##!/bin/bash
+#echo "now running run.sh"
+#UI_WORKING_DIR=$PWD/$UI_WORKING_DIR
+#cp \$UI_WORKING_DIR/share/run.sh .
+
+#echo "Just now running run.sh"
+##cmssw-slc6 --command-to-run "\${UI_WORKING_DIR}/share/run.sh \$1"
+#cmssw-slc6 --command-to-run "./run.sh \$1"
+#EOF
+
+#chmod +x ${UI_WORKING_DIR}/share/startup.sh
+
+exit 0
+#!/bin/bash
+
+jobid=$1
+echo "Inside create...job ID is "$jobid
+filelist=$2
+CMSSW_VERSION=$3
+
+tar -xzf sandbox.tgz 
+files=`grep "^$jobid " $filelist | cut -d ' ' -f 2 | tr '\n' ','`
+echo "process.source.fileNames = cms.untracked.vstring( [ $files ])" >> pset.py
+echo "========================================"
+
+cd $CMSSW_VERSION/
+scram build projectrename
+eval `scramv1 runtime -sh`
+echo $jobid $filelist pset.py $CMSSW_BASE
+echo "cmsRun pyset.py"
+#cmsRun pset.py 
