@@ -20,12 +20,12 @@ fi
 case $site in 
 	any)
 		localsite=`grep "site name" /cvmfs/cms.cern.ch/SITECONF/local/JobConfig/site-local-config.xml | cut -d '=' -f 2 | tr '>' ' ' | sed 's|"||g'`
-		/afs/cern.ch/work/e/ecalmon/cmssw/htCondor/CMSSW_10_3_2/src/Tools/LSFsubmit/scripts/dasgoclient_linux --query="site dataset=$dataset" | grep $localsite -q || unset ISLOCAL
+		$CMSSW_BASE/src/Tools/LSFsubmit/scripts/dasgoclient_linux --query="site dataset=$dataset" | grep $localsite -q || unset ISLOCAL
 		;;
 	*)
-	/afs/cern.ch/work/e/ecalmon/cmssw/htCondor/CMSSW_10_3_2/src/Tools/LSFsubmit/scripts/dasgoclient_linux --query="site dataset=$dataset" | grep $site -q  || {
+	$CMSSW_BASE/src/Tools/LSFsubmit/scripts/dasgoclient_linux --query="site dataset=$dataset" | grep $site -q  || {
 			echo "[ERROR `basename $0`] dataset $dataset not at $site" >> /dev/stderr
-			/afs/cern.ch/work/e/ecalmon/cmssw/htCondor/CMSSW_10_3_2/src/Tools/LSFsubmit/scripts/dasgoclient_linux --query="site dataset=$dataset" >> /dev/stderr
+			$CMSSW_BASE/src/Tools/LSFsubmit/scripts/dasgoclient_linux --query="site dataset=$dataset" >> /dev/stderr
 #			exit 1
 		}
 		;;
@@ -42,7 +42,8 @@ else
 fi
 #dasgoclient --query='run dataset=/EGamma/amassiro-crab_ZElectron-PromptReco-v1-419b2674eb34923977564f218c108f7e/USER instance=prod/phys03'
 #query="file dataset=$dataset and run between [${runmin},${runmax}] status=valid instance=prod/phys03| grep file.name, file.size"
-query="file dataset=$dataset and run between [${runmin},${runmax}] status=valid | grep file.name, file.size"
+#query="file dataset=$dataset and run between [${runmin},${runmax}] status=valid | grep file.name, file.size" #used till Jan 2021
+query="file dataset=$dataset status=valid | grep file.name, file.size"
 #query="file dataset=$dataset and run=${runmin} status=valid | grep file.name, file.size"
 
 echo $query
@@ -50,11 +51,11 @@ echo $query
 if [ -n "${ISLOCAL}" ];then
     #echo "ISLOCAL"
     #dasgoclient --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i+1,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|/store/|"/store/|' | sed  's|.root|.root"|'
-    /afs/cern.ch/work/e/ecalmon/cmssw/htCondor/CMSSW_10_3_2/src/Tools/LSFsubmit/scripts/dasgoclient_linux --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|/store/|"/store/|' | sed  's|.root|.root"|'
+    $CMSSW_BASE/src/Tools/LSFsubmit/scripts/dasgoclient_linux --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|/store/|"/store/|' | sed  's|.root|.root"|'
 else
     #echo "IS NOT LOCAL"
     #dasgoclient --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i+1,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|.root|.root"|' | sed  's|/store/|"root://cms-xrd-global.cern.ch//store/|'
-    /afs/cern.ch/work/e/ecalmon/cmssw/htCondor/CMSSW_10_3_2/src/Tools/LSFsubmit/scripts/dasgoclient_linux --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|.root|.root"|' | sed  's|/store/|"root://cms-xrd-global.cern.ch//store/|'
+    $CMSSW_BASE/src/Tools/LSFsubmit/scripts/dasgoclient_linux --query="$query" --limit=0 | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' | sed  's|.root|.root"|' | sed  's|/store/|"root://cms-xrd-global.cern.ch//store/|'
 fi
 
 #dasgoclient --query="$query" --limit=0  | tr '[' ' ' | tr "'" ' ' | tr "]" " "  | sed 's|,.*"||;s|,.*||;/^$/ d;' | awk '(NF!=0){print $0}' | sort | uniq | awk  -v nEventsMAX=${nEventsMax} 'BEGIN{i=0};(NF!=0){nEvents+=$2; print i,$1,$2,nEvents/nEventsMAX,nEvents,nEventsMAX; if(nEvents>nEventsMAX){i++;nEvents=0}}' 
