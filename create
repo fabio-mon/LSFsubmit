@@ -1,6 +1,5 @@
 #!/bin/bash
-#LSFSUBMIT_PATH=/afs/cern.ch/user/s/shervin/public/LSFsubmit/
-LSFSUBMIT_PATH=/afs/cern.ch/work/e/ecalmon/cmssw/htCondor/CMSSW_10_3_2/src/Tools/LSFsubmit/scripts/
+LSFSUBMIT_PATH=$CMSSW_BASE/src/Tools/LSFsubmit/scripts/
 configFile=$1
 filelist=$2
 
@@ -61,7 +60,7 @@ case $dataset in
 		;;
 esac
 cp $LSFSUBMIT_PATH/CMSSW.sh $UI_WORKING_DIR/share/
-cp $LSFSUBMIT_PATH/copy     $UI_WORKING_DIR/share/
+#cp $LSFSUBMIT_PATH/copy     $UI_WORKING_DIR/share/
 
 # make the sandbox
 $LSFSUBMIT_PATH/sandbox $UI_WORKING_DIR || exit $?
@@ -69,8 +68,11 @@ $LSFSUBMIT_PATH/sandbox $UI_WORKING_DIR || exit $?
 # make the executable script (needed by HTCondor
 cat > $UI_WORKING_DIR/share/run.sh <<EOF
 #!/bin/bash
-PROCESS_ID=\$1
 
+BASE_DIR=${PWD}
+UI_WORKING_DIR=${UI_WORKING_DIR}
+
+PROCESS_ID=\$1
 echo "Process ID "\$PROCESS_ID
 
 export X509_USER_PROXY=\$2
@@ -78,48 +80,79 @@ voms-proxy-info -all
 
 echo "proxy info "\$X509_USER_PROXY
 
-UI_WORKING_DIR=$PWD/$UI_WORKING_DIR; 
-echo "\${PROCESS_ID} RUNNING" > \$UI_WORKING_DIR/res/\${PROCESS_ID}.status; 
-cp \$UI_WORKING_DIR/share/* .; 
+echo "\${PROCESS_ID} RUNNING" > \${BASE_DIR}/\$UI_WORKING_DIR/res/\${PROCESS_ID}.status; 
+cp \${BASE_DIR}/\$UI_WORKING_DIR/share/* .; 
+source ./config
 
-./CMSSW.sh \${PROCESS_ID} filelist $CMSSW_VERSION; 
+#to use ecalautomation.py
+source /eos/project-c/cms-ecal-calibration/ecal-venv/bin/activate
+ecalautomation.py -c \${datasetname}  -w ECALELF_prod -e \${extraName} jobctrl --id \${PROCESS_ID} --running
+#disable temporary ecal automation because it interferes with cmsRun
+deactivate
+
+#######################################################################
+#CMSSW job
+./CMSSW.sh \${PROCESS_ID} filelist $CMSSW_VERSION
 EXITSTATUS=\$?; 
-echo "\${PROCESS_ID} \$EXITSTATUS" >  \${UI_WORKING_DIR}/res/\${PROCESS_ID}.status
+
+source /eos/project-c/cms-ecal-calibration/ecal-venv/bin/activate
+
+if [ \$EXITSTATUS != 0 ]
+then
+    echo "[\`basename \$0\`] exitstatus=\$EXITSTATUS"
+    ecalautomation.py -c \${datasetname}  -w ECALELF_prod -e \${extraName} jobctrl --id \${PROCESS_ID} --failed
+    echo "\${PROCESS_ID} \$EXITSTATUS" >  \${BASE_DIR}/\${UI_WORKING_DIR}/res/\${PROCESS_ID}.status
+    exit \$EXITSTATUS
+fi
+echo "======================================== ls"
+ls
+echo "======================================== Copy"
+echo "------------------------------ configfile"
+cat config
+
+echo "------------------------------"
+
+ID=\`uuidgen -r | cut -d '-' -f 2\`
+
+declare -a filenames
+declare -a filetypes
+for file in \$outFiles *.root
+do
+        echo "checking "\$file 
+	if [ ! -e "\${file}" ]; then continue; fi
+	newFileName=\`basename \$file .root\`-\$PROCESS_ID-1-\$ID.root
+	mv \$file \$newFileName
+	ls
+	echo "xrdcp -vsN \$newFileName \$storage_path/\${user_remote_dir} "
+	if ( xrdcp -vsN \$newFileName \$storage_path/\${user_remote_dir}/\$newFileName ) then
+	    simple_storage_path=\$(echo \$storage_path | sed -e 's#root://eoscms/##g')
+	    filenames+=("\$simple_storage_path/\${user_remote_dir}/\$newFileName")
+	    filetypes+=(\`basename \$file .root\`)
+	else
+	    CPEXITSTATUS=\$((60000+\$?))
+            ecalautomation.py -c \${datasetname}  -w ECALELF_prod -e \${extraName} jobctrl --id \${PROCESS_ID} --failed
+            echo "\${PROCESS_ID} \$CPEXITSTATUS" >  \${BASE_DIR}/\${UI_WORKING_DIR}/res/\${PROCESS_ID}.status
+	    exit \$CPEXITSTATUS
+	fi
+done
+
+# if I am here both cmsrun and copy run correctly
+ecalautomation.py -c \${datasetname}  -w ECALELF_prod -e \${extraName} jobctrl --id \${PROCESS_ID} --done
+for ifile in "\${!filenames[@]}"
+do
+    echo
+    ecalautomation.py -c \${datasetname}  -w ECALELF_prod -e \${extraName} setfile --id \${PROCESS_ID} --path \${filenames[ifile]} --type \${filetypes[ifile]}
+done
+
+echo "\${PROCESS_ID} 0" >  \${BASE_DIR}/\${UI_WORKING_DIR}/res/\${PROCESS_ID}.status
+echo "======================================== END"
 EOF
 
+#disable communication with database in case ECALAUTOMATION is OFF
+if [ $ECALAUTOMATION = 0 ]
+then
+   sed -i "s/ecalautomation.py/#ecalautomation.py/g" ${UI_WORKING_DIR}/share/run.sh
+fi
 chmod +x ${UI_WORKING_DIR}/share/run.sh
 
-
-####startup script for SLC6
-#cat > $UI_WORKING_DIR/share/startup.sh <<EOF
-##!/bin/bash
-#echo "now running run.sh"
-#UI_WORKING_DIR=$PWD/$UI_WORKING_DIR
-#cp \$UI_WORKING_DIR/share/run.sh .
-
-#echo "Just now running run.sh"
-##cmssw-slc6 --command-to-run "\${UI_WORKING_DIR}/share/run.sh \$1"
-#cmssw-slc6 --command-to-run "./run.sh \$1"
-#EOF
-
-#chmod +x ${UI_WORKING_DIR}/share/startup.sh
-
 exit 0
-#!/bin/bash
-
-jobid=$1
-echo "Inside create...job ID is "$jobid
-filelist=$2
-CMSSW_VERSION=$3
-
-tar -xzf sandbox.tgz 
-files=`grep "^$jobid " $filelist | cut -d ' ' -f 2 | tr '\n' ','`
-echo "process.source.fileNames = cms.untracked.vstring( [ $files ])" >> pset.py
-echo "========================================"
-
-cd $CMSSW_VERSION/
-scram build projectrename
-eval `scramv1 runtime -sh`
-echo $jobid $filelist pset.py $CMSSW_BASE
-echo "cmsRun pyset.py"
-#cmsRun pset.py 

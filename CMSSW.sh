@@ -58,9 +58,3 @@ cmsRun pset.py ||  {
 	echo "[`basename $0`] exitstatus=$exitstatus"
 	exit $exitstatus
 }
-echo "======================================== ls"
-ls
-echo "======================================== Copy"
-./copy config $jobid || exit $((60000+$?))
-echo "======================================== END"
-#cmsRun pset.py 
