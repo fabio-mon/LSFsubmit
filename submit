@@ -72,8 +72,8 @@ if voms-proxy-info | grep -q "timeleft  : 00:00:00" ; then
 	voms-proxy-list
 fi
 
-cp /tmp/x509up_u${UID} $UI_WORKING_DIR/share/ || exit 1
-cp /tmp/x509up_u${UID} $HOME/private/x509up || exit 1
+cp $X509_USER_PROXY $UI_WORKING_DIR/share/ || exit 1
+cp $X509_USER_PROXY $HOME/private/x509up || exit 1
 
 echo "Submitted now!!!!"
 
