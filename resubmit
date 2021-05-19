@@ -24,10 +24,10 @@ for j in $joblist
 do
 	
 	if grep -s "$j 0" ${UI_WORKING_DIR}/res/$j.status ; then
-		echo "[WARNING `basename $0`] job done, if you want to force resubmitssion, please remove the .status file" >> /dev/stderr
+		echo "[WARNING `basename $0`] job done, if you want to force resubmitssion, please remove the .status file"
 	else
 		if grep -s "SUBMITTED" ${UI_WORKING_DIR}/res/$j.status ; then
-			echo "[WARNING `basename $0`] job done, if you want to force resubmitssion, please remove the .status file" >> /dev/stderr
+			echo "[WARNING `basename $0`] job done, if you want to force resubmitssion, please remove the .status file"
 		else
 		####first remove the files related to this job if going to be resubmitted
 		IFS=$'\n' #### SJ!!! stupid thing needed to make the line below work
@@ -57,6 +57,6 @@ echo $JOBID > $UI_WORKING_DIR/JOBID
 	
 touch $UI_WORKING_DIR/res/submitted
 else
-	echo "[WARNING `basename $0`] Jobs for $UI_WORKING_DIR have been already submitted" >> /dev/stderr
+	echo "[WARNING `basename $0`] Jobs for $UI_WORKING_DIR have been already submitted"
 fi
 
