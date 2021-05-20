@@ -7,4 +7,4 @@ if [ -z "$CMSSW_VERSION" ];then
 fi
 
 #tar  --exclude-vcs --exclude="*.root" --exclude="*/doxygen/*" --exclude="*/interface/*" --exclude="*/src/*/*/src/*" --exclude="*/tmp/*" --exclude="*src/*/*/lib/*" --exclude="*/macros/*"  --xform="s|${CMSSW_BASE}|${CMSSW_VERSION}|" -P --add-file $UI_WORKING_DIR/share/pset.py --add-file $UI_WORKING_DIR/share/filelist -czf $UI_WORKING_DIR/share/sandbox.tgz $CMSSW_BASE/.SCRAM/ CMSSW_BASE/python
-tar  --exclude="*.tgz" --xform="s|${CMSSW_BASE}|${CMSSW_VERSION}|" -P -hczf $UI_WORKING_DIR/share/sandbox.tgz $CMSSW_BASE/.SCRAM/ $CMSSW_BASE/config $CMSSW_BASE/python $CMSSW_BASE/lib $CMSSW_BASE/bin $CMSSW_BASE/src/*/*/data/ || exit $?
+tar  --exclude="*.tgz" --xform="s|${CMSSW_BASE}|${CMSSW_VERSION}|" -P -hczf $UI_WORKING_DIR/share/sandbox.tgz $CMSSW_BASE/.SCRAM/ $CMSSW_BASE/config $CMSSW_BASE/python $CMSSW_BASE/lib $CMSSW_BASE/bin $CMSSW_BASE/src/*/*/data/ $CMSSW_BASE/external  || exit $?
