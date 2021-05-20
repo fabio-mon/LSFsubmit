@@ -8,7 +8,6 @@ CMSSW_VERSION=$3
 echo "jobID is " $jobid
 echo "Filelist is "$filelist
 
-tar -xzf sandbox.tgz 
 files=`grep "^$jobid " $filelist | cut -d ' ' -f 2 | tr '\n' ','`
 echo $files
 echo "process.source.fileNames = cms.untracked.vstring( [ $files ])" >> pset.py
@@ -16,7 +15,6 @@ tail pset.py
 echo "========================================"
 
 cd $CMSSW_VERSION/
-scram build projectrename
 #####try
 #scram build --ignore-arch projectrename
 eval `scramv1 runtime -sh`

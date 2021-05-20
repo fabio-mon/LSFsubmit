@@ -84,18 +84,22 @@ echo "\${PROCESS_ID} RUNNING" > \${BASE_DIR}/\$UI_WORKING_DIR/res/\${PROCESS_ID}
 cp \${BASE_DIR}/\$UI_WORKING_DIR/share/* .; 
 source ./config
 
+tar -xzf sandbox.tgz 
+cd $CMSSW_VERSION/
+scram build projectrename
+eval \`scramv1 runtime -sh\`
+export PYTHON3PATH=\$CMSSW_BASE/external/\$SCRAM_ARCH/lib/python3.6/site-packages:\$PYTHON3PATH
+cd -
+
 #to use ecalautomation.py
-source /eos/project-c/cms-ecal-calibration/ecal-venv/bin/activate
 ecalautomation.py -c \${datasetname}  -w ECALELF_prod -e \${extraName} jobctrl --id \${PROCESS_ID} --running
 #disable temporary ecal automation because it interferes with cmsRun
-deactivate
 
 #######################################################################
 #CMSSW job
 ./CMSSW.sh \${PROCESS_ID} filelist $CMSSW_VERSION
 EXITSTATUS=\$?; 
 
-source /eos/project-c/cms-ecal-calibration/ecal-venv/bin/activate
 
 if [ \$EXITSTATUS != 0 ]
 then
