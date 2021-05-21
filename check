@@ -7,10 +7,10 @@ jobid=`ls ${UI_WORKING_DIR}/res/[0-9]*.[0-9]*-job.log | head -1 | sed 's|.*/||;s
 echo "------------------------------JOB STATUS"
 echo $UI_WORKING_DIR
 if ls $UI_WORKING_DIR/res/*.status &> /dev/null ;then
-	cat $UI_WORKING_DIR/res/*.status | sort -n | awk '(NF==2){status=$2; joblist[status]=sprintf("%s %d", joblist[status], $1)}; END{for(status in joblist){print status, "\t", joblist[status]}}' | awk -f awk/compact.awk | sed 's|,$||' | sort -r | column -t
+	cat $UI_WORKING_DIR/res/*.status | sort -n | awk '(NF==2){status=$2; joblist[status]=sprintf("%s %d", joblist[status], $1)}; END{for(status in joblist){print status, "\t", joblist[status]}}' | awk -f $CMSSW_BASE/src/Calibration/EcalAlCaRecoProducers/awk/compact.awk | sed 's|,$||' | sort -r | column -t
 	
 	#DONE=`cat $UI_WORKING_DIR/res/*.status | sort -n | awk '(NF==2){status=$2; joblist[status]=sprintf("%s %d", joblist[status], $1)}; END{for(status in joblist){print status, "\t", joblist[status]}}' | awk -f awk/compact.awk | sed 's|,$||' | grep -c -F "[0] 1-${nJobs}"`
-	DONE=`cat $UI_WORKING_DIR/res/*.status | sort -n | awk '(NF==2){status=$2; joblist[status]=sprintf("%s %d", joblist[status], $1)}; END{for(status in joblist){print status, "\t", joblist[status]}}' | awk -f awk/compact.awk | sed 's|,$||' | grep -c -F "[0] 0-${nJobs}"`
+	DONE=`cat $UI_WORKING_DIR/res/*.status | sort -n | awk '(NF==2){status=$2; joblist[status]=sprintf("%s %d", joblist[status], $1)}; END{for(status in joblist){print status, "\t", joblist[status]}}' | awk -f $CMSSW_BASE/src/Calibration/EcalAlCaRecoProducers/awk/compact.awk | sed 's|,$||' | grep -c -F "[0] 0-${nJobs}"`
 
 		
 	echo "DONE is "$DONE
