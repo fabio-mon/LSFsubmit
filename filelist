@@ -31,20 +31,17 @@ case $site in
 		;;
 esac
 
-
+query="file dataset=$dataset status=valid | grep file.name, file.size"
 
 if [ -n "$runrange" ];then
-	runmin=`echo $runrange | cut -d '-' -f 1`
-	runmax=`echo $runrange | cut -d '-' -f 2`
-else
-	runmin=0
-	runmax=999999
+    runmin=`echo $runrange | cut -d '-' -f 1`
+    runmax=`echo $runrange | cut -d '-' -f 2`
+    if [ $runmin -eq $runmax ]; then
+	query="file dataset=$dataset and run=${runmin} status=valid | grep file.name, file.size"
+    else
+	query="file dataset=$dataset and run between [${runmin},${runmax}] status=valid | grep file.name, file.size"
+    fi
 fi
-#dasgoclient --query='run dataset=/EGamma/amassiro-crab_ZElectron-PromptReco-v1-419b2674eb34923977564f218c108f7e/USER instance=prod/phys03'
-#query="file dataset=$dataset and run between [${runmin},${runmax}] status=valid instance=prod/phys03| grep file.name, file.size"
-#query="file dataset=$dataset and run between [${runmin},${runmax}] status=valid | grep file.name, file.size" #used till Jan 2021
-query="file dataset=$dataset status=valid | grep file.name, file.size"
-#query="file dataset=$dataset and run=${runmin} status=valid | grep file.name, file.size"
 
 echo $query
 
