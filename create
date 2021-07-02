@@ -88,7 +88,7 @@ tar -xzf sandbox.tgz
 cd $CMSSW_VERSION/
 scram build projectrename
 eval \`scramv1 runtime -sh\`
-export PYTHON3PATH=\$CMSSW_BASE/external/\$SCRAM_ARCH/lib/python3.6/site-packages:\$PYTHON3PATH
+export PYTHON3PATH=\`ls \$CMSSW_BASE/external/\$SCRAM_ARCH/lib/python*/site-packages -d\`:\$PYTHON3PATH #this trick should avoid failures caused by changes of the python version 
 cd -
 
 #to use ecalautomation.py
